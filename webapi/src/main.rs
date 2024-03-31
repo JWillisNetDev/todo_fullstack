@@ -1,20 +1,16 @@
-use std::net::SocketAddr;
-use axum::{
-    extract::{FromRef, FromRequestParts, State, Path},
-    http::{request::Parts, StatusCode},
-    response::Json,
-    routing::{get, post, put, delete},
-    Router,
-};
-use diesel::prelude::*;
-use diesel_async::{
-    RunQueryDsl, pooled_connection::AsyncDieselConnectionManager,
-};
-use serde::Deserialize;
 use crate::db::{
-    models::{Todo, CreateTodo, UpdateTodo},
+    models::{Todo, UpdateTodo},
     repositories::DbConnection,
 };
+use axum::{
+    extract::Path,
+    http::StatusCode,
+    response::Json,
+    routing::{delete, get, post, put},
+    Router,
+};
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use std::net::SocketAddr;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod db;
@@ -29,7 +25,8 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let db_url = dotenv::var("DATABASE_URL").expect("Could not find value for required environment variable DATABASE_URL.");
+    let db_url = dotenv::var("DATABASE_URL")
+        .expect("Could not find value for required environment variable DATABASE_URL.");
 
     let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(db_url);
     let pool = bb8::Pool::builder().build(config).await.unwrap();
@@ -53,13 +50,14 @@ fn internal_error(err: String) -> (StatusCode, String) {
 }
 
 async fn get_todos(db: DbConnection) -> Result<Json<Vec<Todo>>, (StatusCode, String)> {
-    let todos = DbConnection::get_todos(db)
-        .await
-        .map_err(internal_error)?;
+    let todos = DbConnection::get_todos(db).await.map_err(internal_error)?;
     Ok(Json(todos))
 }
 
-async fn get_todo(db: DbConnection, Path(id): Path<i32>) -> Result<Json<Option<Todo>>, (StatusCode, String)> {
+async fn get_todo(
+    db: DbConnection,
+    Path(id): Path<i32>,
+) -> Result<Json<Option<Todo>>, (StatusCode, String)> {
     let result = DbConnection::get_todo(db, id)
         .await
         .map_err(internal_error)?;
@@ -74,13 +72,20 @@ async fn create_todo(db: DbConnection, title: String) -> Result<Json<Todo>, (Sta
     Ok(Json(todo))
 }
 
-async fn update_todo<'a>(db: DbConnection, Path(id): Path<i32>, Json(update_todo): Json<UpdateTodo>) -> Result<Json<Option<Todo>>, (StatusCode, String)> {
+async fn update_todo<'a>(
+    db: DbConnection,
+    Path(id): Path<i32>,
+    Json(update_todo): Json<UpdateTodo>,
+) -> Result<Json<Option<Todo>>, (StatusCode, String)> {
     let todo = DbConnection::update_todo(db, id, update_todo)
         .await
         .map_err(internal_error)?;
 
     if todo.is_none() {
-        Err((StatusCode::NOT_FOUND, format!("No todo item exists with id `{id}`")))
+        Err((
+            StatusCode::NOT_FOUND,
+            format!("No todo item exists with id `{id}`"),
+        ))
     } else {
         Ok(Json(todo))
     }
@@ -93,6 +98,9 @@ async fn delete_todo(db: DbConnection, Path(id): Path<i32>) -> Result<(), (Statu
     if res {
         Ok(())
     } else {
-        Err((StatusCode::NOT_FOUND, format!("No todo item exists with id `{id}` or todo item could not be deleted.")))
+        Err((
+            StatusCode::NOT_FOUND,
+            format!("No todo item exists with id `{id}` or todo item could not be deleted."),
+        ))
     }
 }

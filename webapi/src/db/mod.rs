@@ -1,12 +1,7 @@
-use axum::{
-    async_trait,
-    extract::{FromRef, FromRequestParts},
-    http::{request::Parts, StatusCode}
-};
-use diesel_async::{AsyncPgConnection, pooled_connection::AsyncDieselConnectionManager, };
+use diesel_async::{pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection};
 
 pub mod models;
-pub mod schema;
 pub mod repositories;
+pub mod schema;
 
 pub type Pool = bb8::Pool<AsyncDieselConnectionManager<AsyncPgConnection>>;

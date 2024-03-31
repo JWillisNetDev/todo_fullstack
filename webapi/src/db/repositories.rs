@@ -1,38 +1,38 @@
 use crate::db::{
-    models::{Todo, CreateTodo, UpdateTodo},
-    Pool
+    models::{CreateTodo, Todo, UpdateTodo},
+    Pool,
 };
 use axum::{
     async_trait,
-    http::{request::Parts, StatusCode},
-    response::Json,
     extract::{FromRef, FromRequestParts},
-};
-use diesel_async::{
-    AsyncPgConnection,
-    RunQueryDsl,
-    pooled_connection::AsyncDieselConnectionManager
+    http::{request::Parts, StatusCode},
 };
 use diesel::prelude::*;
+use diesel_async::{
+    pooled_connection::AsyncDieselConnectionManager, AsyncPgConnection, RunQueryDsl,
+};
 
 pub struct DbConnection(
-    bb8::PooledConnection<'static, AsyncDieselConnectionManager<AsyncPgConnection>>
+    bb8::PooledConnection<'static, AsyncDieselConnectionManager<AsyncPgConnection>>,
 );
 
 pub fn map_internal_err<E: std::error::Error>(err: E) -> (StatusCode, String) {
     (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
 
-fn map_err<E: std::error::Error>(err: E) -> String { err.to_string() }
+fn map_err<E: std::error::Error>(err: E) -> String {
+    err.to_string()
+}
 
 #[async_trait]
 impl<S> FromRequestParts<S> for DbConnection
 where
     S: Send + Sync,
-    Pool: FromRef<S>, {
+    Pool: FromRef<S>,
+{
     type Rejection = (StatusCode, String);
 
-    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+    async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let pool = Pool::from_ref(state);
         let conn = pool.get_owned().await.map_err(map_internal_err)?;
 
@@ -68,7 +68,11 @@ impl DbConnection {
             .await
             .map_err(map_err)
     }
-    pub async fn update_todo<'a>(DbConnection(mut conn): Self, id: i32, update_todo: UpdateTodo) -> Result<Option<Todo>, String> {
+    pub async fn update_todo<'a>(
+        DbConnection(mut conn): Self,
+        id: i32,
+        update_todo: UpdateTodo,
+    ) -> Result<Option<Todo>, String> {
         diesel::update(super::schema::todo::table)
             .filter(super::schema::todo::id.eq(id))
             .set(&update_todo)
