@@ -55,7 +55,7 @@ pub async fn create_todo(
     Ok(Json(todo))
 }
 
-pub async fn update_todo<'a>(
+pub async fn update_todo(
     db: DbConnection,
     Path(id): Path<i32>,
     Json(update_todo): Json<UpdateTodo>,
