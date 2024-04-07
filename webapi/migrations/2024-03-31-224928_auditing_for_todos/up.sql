@@ -1,0 +1,16 @@
+ALTER TABLE todo
+    ADD COLUMN created_at TIMESTAMP NOT NULL DEFAULT now(),
+    ADD COLUMN updated_at TIMESTAMP NULL;
+
+CREATE OR REPLACE FUNCTION updated_at()
+RETURNS TRIGGER LANGUAGE plpgsql AS
+$func$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$func$;
+
+CREATE TRIGGER updated_at
+BEFORE UPDATE ON todo
+FOR EACH ROW EXECUTE PROCEDURE updated_at();
