@@ -1696,6 +1696,8 @@ dependencies = [
  "console_error_panic_hook",
  "gloo-net 0.5.0",
  "log",
+ "serde",
+ "serde_json",
  "wasm-bindgen-futures",
  "wasm-logger",
  "yew",

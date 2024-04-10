@@ -1,15 +1,19 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
-use components::HelloServer;
+use crate::components::HelloServer;
+use crate::pages::TodoList;
 
 mod components;
+mod pages;
+mod services;
+mod models;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
     #[at("/")]
     Home,
-    #[at("/test")]
-    HelloServer,
+    #[at("/todos")]
+    Todos,
 }
 
 fn main() {
@@ -29,7 +33,11 @@ pub fn app() -> Html {
 
 fn switch(route: Route) -> Html {
     match route {
-        Route::Home => html! { <h1 class="text-green text-3xl m-4 font-bold underline">{"Hello, world! You're on Rust!"}</h1> },
-        Route::HelloServer => html! { <HelloServer /> }
+        Route::Home => html! {
+            <div class="bg-green">
+                <h1 class="p-4 text-3xl font-alfa text-white">{"Hello, world! You're on Rust!"}</h1>
+            </div>
+        },
+        Route::Todos => html! { <TodoList /> }
     }
 }

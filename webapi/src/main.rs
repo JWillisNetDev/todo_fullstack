@@ -1,14 +1,14 @@
 use crate::handlers::RouteTodoExt;
 use axum::{
-    body::Body,
-    http::{Response, StatusCode},
+    http::StatusCode,
     response::IntoResponse,
-    routing::{get},
+    routing::get,
     Router,
 };
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use axum::response::Html;
 use tokio::fs;
 use tower::{ServiceBuilder, ServiceExt};
 use tower_http::{services::ServeDir, trace::TraceLayer};
@@ -19,10 +19,12 @@ mod handlers;
 
 #[tokio::main]
 async fn main() {
+    dotenv::dotenv().ok();
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "example_diesel_async_postgres=debug".into()),
+                .unwrap_or_else(|_| "debug,hyper=info,mio=info".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -33,45 +35,30 @@ async fn main() {
     let config = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(db_url);
     let pool = bb8::Pool::builder().build(config).await.unwrap();
 
+    let static_dir = dotenv::var("STATIC_DIR").expect("Static directory not specified in environment variables.");
     let app = Router::new()
         .route_todo()
-        .fallback_service(get(|request| async move {
-            let static_dir = dotenv::var("STATIC_DIR").unwrap();
-            match ServeDir::new(&static_dir).oneshot(request).await {
-                Ok(resp) => {
-                    if resp.status() == StatusCode::NOT_FOUND {
-                        let index_path = PathBuf::from(&static_dir).join("index.html");
-                        let index_content = match fs::read_to_string(index_path).await {
-                            Err(_) => {
-                                return Response::builder()
-                                    .status(StatusCode::NOT_FOUND)
-                                    .body(Body::from("Index file was not found."))
-                                    .unwrap();
-                            }
-                            Ok(index_content) => index_content,
-                        };
-
-                        Response::builder()
-                            .status(StatusCode::OK)
-                            .body(Body::from(index_content))
-                            .unwrap()
-                    } else {
-                        resp.into_response()
-                    }
+        .fallback_service(get(|req| async move {
+            let res = ServeDir::new(&static_dir).oneshot(req).await.unwrap();
+            let status = res.status();
+            match status {
+                StatusCode::NOT_FOUND => {
+                    let index_path = PathBuf::from(&static_dir).join("index.html");
+                    fs::read_to_string(index_path)
+                        .await
+                        .map(|index_content| (StatusCode::OK, Html(index_content)).into_response())
+                        .unwrap_or_else(|_| {
+                            (StatusCode::INTERNAL_SERVER_ERROR, "index.html not found").into_response()
+                        })
                 }
-
-                Err(err) => Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(format!("error: {err}")))
-                    .expect("Error response.")
-                    .into_response(),
+                _ => res.into_response(),
             }
         }))
         .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()))
         .with_state(pool);
 
     let socket_addr = dotenv::var("HTTP_SERVE_ADDR")
-        .unwrap_or("[::1]:8080".into())
+        .unwrap_or("[::1]:8081".into())
         .parse::<SocketAddr>()
         .expect("Failed to convert server address into a valid socket address");
 
