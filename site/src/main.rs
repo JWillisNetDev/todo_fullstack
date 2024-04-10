@@ -1,20 +1,25 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
+use components::HelloServer;
+
+mod components;
 
 #[derive(Clone, Routable, PartialEq)]
-enum Route {
+pub enum Route {
     #[at("/")]
     Home,
+    #[at("/test")]
+    HelloServer,
 }
 
-fn switch(routes: Route) -> Html {
-    match routes {
-        Route::Home => html!{ <h1>{ "Hello, world!" }</h1> },
-    }
+fn main() {
+    wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
+    console_error_panic_hook::set_once();
+    yew::Renderer::<App>::new().render();
 }
 
 #[function_component(App)]
-fn app() -> Html {
+pub fn app() -> Html {
     html! {
         <BrowserRouter>
             <Switch<Route> render={switch} />
@@ -22,8 +27,9 @@ fn app() -> Html {
     }
 }
 
-fn main() {
-    wasm_logger::init(wasm_logger::Config::new(log::Level::Trace));
-    console_error_panic_hook::set_once();
-    yew::Renderer::<App>::new().render();
+fn switch(route: Route) -> Html {
+    match route {
+        Route::Home => html! { <h1 class="text-green text-3xl m-4 font-bold underline">{"Hello, world! You're on Rust!"}</h1> },
+        Route::HelloServer => html! { <HelloServer /> }
+    }
 }

@@ -21,11 +21,11 @@ pub trait RouteTodoExt {
 impl RouteTodoExt for Router<Pool> {
     fn route_todo(&self) -> Self {
         self.to_owned()
-            .route("/todo/list", get(get_todos))
-            .route("/todo/:id", get(get_todo))
-            .route("/todo/create", post(create_todo))
-            .route("/todo/:id", put(update_todo))
-            .route("/todo/:id", delete(delete_todo))
+            .route("/api/todo/list", get(get_todos))
+            .route("/api/todo/:id", get(get_todo))
+            .route("/api/todo/create", post(create_todo))
+            .route("/api/todo/:id", put(update_todo))
+            .route("/api/todo/:id", delete(delete_todo))
     }
 }
 

@@ -11,5 +11,5 @@ gloo-net = "0.5.0"
 log = "0.4.21"
 wasm-bindgen-futures = "0.4.42"
 wasm-logger = "0.2.0"
-yew = { version = "0.21.0", features = ["csr"] }
+yew = { version = "0.21.0", features = ["csr", "ssr"] }
 yew-router = "0.18.0"
