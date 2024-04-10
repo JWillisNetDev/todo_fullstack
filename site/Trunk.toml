@@ -7,8 +7,3 @@ backend = "http://[::1]:8081/api/"
 
 [tools]
 tailwindcss = "3.4.3"
-
-#[[hooks]]
-#stage = "pre_build"
-#command = "tailwindcss"
-#command_arguments = ["-i", "input.css", "-o", "app.g.css"]
